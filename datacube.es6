@@ -635,48 +635,32 @@ class DataCube {
 		// Note: on little endian machine, data32 is 0xaabbggrr, so it's already flipped
 		// from the Uint8 RGBA
 
-		let shifts = {
-			1: 24,
-			2: 16,
-			4: 0,
+		let masks = {
+			true: {
+				1: 0x000000ff,
+				2: 0x0000ffff,
+				4: 0xffffffff,
+			},
+			false: {
+				1: 0xff000000,
+				2: 0xffff0000,
+				4: 0xffffffff,				
+			},
 		};
 
-		const shift = shifts[this.bytes];
-
-		// This solution of shifting the bits is elegant, but individual implementations
-		// for 1, 2, and 4 bytes would be more efficient.
+		const mask = masks[this.isLittleEndian()][this.bytes];
 		
-		let x, y, color;
+		let x = 0, y = 0;
 		
-		const sizex = _this.size.x,
-			  zadj = offsetz * _this.size.x * _this.size.y;
-
-		if (this.isLittleEndian()) {
-			for (let i = data32.length - 1; i >= 0; i--) {
-				x = offsetx + (i % width);
-				y = offsety + ((i / width)|0); // |0 is bit twidling Math.floor
-
-				// the shift operation below deletes unused higher values
-				// e.g. if we're in 8 bit, we want the R value from ABGR
-				// so turn it into 000R
-				_this.cube[x + sizex * y + zadj] = (data32[i] << shift >>> shift);	
-			}
-		}
-		else { // Untested.... don't have a big endian to test on
-			for (let i = data32.length - 1; i >= 0; i--) {
-				x = offsetx + (i % width);
-				y = offsety + ((i / width)|0); // |0 is bit twidling Math.floor 
-
-				color = (data32[i] >>> shift << shift); // inverted compared to little endian
-
-				// rgba -> abgr in byte order
-
-				_this.cube[x + sizex * y + zadj] = (
-					(color << 24)
-					| ((color & 0xff00) << 8)
-					| ((color & 0xff0000) >>> 8) 
-					| (color >>> 24)
-				);
+		const sizex = _this.size.x | 0,
+			  zadj = (offsetz * _this.size.x * _this.size.y) | 0;
+		
+		for (y = width - 1; y >= 0; y--) {
+			for (x = width - 1; x >= 0; x--) {
+			
+				_this.cube[
+					(offsetx + x) + sizex * (offsety + y) + zadj
+				] = data32[ x + y * width ] & mask;
 			}
 		}
 
