@@ -688,7 +688,9 @@ class DataCube {
 		return this.cube[x + this.size.x * y + this.size.x * this.size.y * z];
 	}
 
-	/* Return a 2D slice of the data cube as a 1D array 
+	/* slice
+	 * 
+	 * Return a 2D slice of the data cube as a 1D array 
 	 * of the same type.
 	 * 
 	 * x axis gets a yz plane, y gets xz, and z gets xy.
@@ -698,13 +700,13 @@ class DataCube {
 	 * Required:
 	 *   axis: x, y, or z
 	 *   index: 0 to size - 1 on that axis
-	 *   
+	 * 
 	 * Optional:
-	 *    buffer: Write to this provided buffer instead of making one
+	 *   [2] copy - allocates new memory if true, otherwise returns a view on the underlying arraybuffer
 	 *
 	 * Return: 1d array
 	 */
-	slice (axis, index, buffer = null) {
+	slice (axis, index, copy = true) {
 		let _this = this;
 
 		if (index < 0 || index >= this.size[axis]) {
@@ -717,29 +719,30 @@ class DataCube {
 
 		const xysize = xsize * ysize;
 
-		// Go super fast... just because we can
-		if (axis === 'z' && !buffer) {
-			return _this.cube.subarray(xysize * index, xysize * (index + 1));
-		}
-
-		let faces = {
-			x: ['y', 'z'],
-			y: ['x', 'z'],
-			z: ['x', 'y'],
-		};
-
-		let face = faces[axis];
+		let face = this.faces[axis];
 		let ArrayType = this.arrayType();
 
-		let square = buffer || (new ArrayType(this.size[face[0]] * this.size[face[1]]));
+		if (axis === 'z') {
+			let byteoffset = index * xysize * this.bytes;
+
+			if (copy) {
+				let buf = _this.cube.buffer.slice(byteoffset, byteoffset + xysize * this.bytes);
+				return new ArrayType(buf);
+			} 
+			else {
+				return new ArrayType(_this.cube.buffer, byteoffset, xysize);
+			}
+		}
+
+		let square = new ArrayType(this.size[face[0]] * this.size[face[1]]);
 
 		// Note: order of loops is important for efficient memory access
 		// and correct orientation of images. Consecutive x access is most efficient.
 
 		let i = square.length - 1;
 		if (axis === 'x') {
-			for (let y = ysize - 1; y >= 0; --y) {
-				for (let z = zsize - 1; z >= 0; --z) {
+			for (let z = zsize - 1; z >= 0; --z) {
+				for (let y = ysize - 1; y >= 0; --y) {
 					square[i] = _this.cube[index + xsize * y + xysize * z];
 					--i;
 				}
@@ -752,15 +755,6 @@ class DataCube {
 			for (let z = zsize - 1; z >= 0; --z) {
 				for (let x = xsize - 1; x >= 0; --x) { 
 					square[i] = _this.cube[x + yoffset + xysize * z];
-					--i;
-				}
-			}
-		}
-		else if (axis === 'z') { 
-			const zoffset = xysize * index;
-			for (let y = ysize - 1; y >= 0; --y) {
-				for (let x = xsize - 1; x >= 0; --x) {
-					square[i] = _this.cube[x + xsize * y + zoffset];
 					--i;
 				}
 			}
