@@ -393,9 +393,9 @@ class Volume {
 
 			// overlayColor[i] + buffer[startIndex + i] * (1 - alpha);
 			if (_this.segments[segid]) {
-				pixels.data[i * 4 + 0] = Math.floor((pixels.data[i * 4 + 0] * (1 - alpha)) + (color[0] * alpha));
-				pixels.data[i * 4 + 1] = Math.floor((pixels.data[i * 4 + 1] * (1 - alpha)) + (color[1] * alpha));
-				pixels.data[i * 4 + 2] = Math.floor((pixels.data[i * 4 + 2] * (1 - alpha)) + (color[2] * alpha));
+				pixels.data[i * 4 + 0] = ((pixels.data[i * 4 + 0] * (1 - alpha)) + (color[0] * alpha)) | 0;
+				pixels.data[i * 4 + 1] = ((pixels.data[i * 4 + 1] * (1 - alpha)) + (color[1] * alpha)) | 0;
+				pixels.data[i * 4 + 2] = ((pixels.data[i * 4 + 2] * (1 - alpha)) + (color[2] * alpha)) | 0;
 			}
 		}
 
@@ -654,7 +654,7 @@ class DataCube {
 		if (this.isLittleEndian()) {
 			for (let i = data32.length - 1; i >= 0; i--) {
 				x = offsetx + (i % width);
-				y = offsety + (~~(i / width)); // ~~ is bit twidling Math.floor using bitwise not
+				y = offsety + ((i / width)|0); // |0 is bit twidling Math.floor
 
 				// the shift operation below deletes unused higher values
 				// e.g. if we're in 8 bit, we want the R value from ABGR
@@ -665,7 +665,7 @@ class DataCube {
 		else { // Untested.... don't have a big endian to test on
 			for (let i = data32.length - 1; i >= 0; i--) {
 				x = offsetx + (i % width);
-				y = offsety + (~~(i / width)); // ~~ is bit twidling Math.floor using bitwise not
+				y = offsety + ((i / width)|0); // |0 is bit twidling Math.floor 
 
 				color = (data32[i] >>> shift << shift); // inverted compared to little endian
 

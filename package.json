@@ -13,5 +13,8 @@
     "gulp": "^3.9.0",
     "gulp-babel": "^6.1.1",
     "vinyl": "^1.1.0"
+  },
+  "dependencies": {
+    "yargs": "^11.0.0"
   }
 }

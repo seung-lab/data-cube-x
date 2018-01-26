@@ -48,6 +48,7 @@ var Volume = function () {
   * Return: promise representing download completion state
   */
 
+
 	_createClass(Volume, [{
 		key: "load",
 		value: function load() {
@@ -405,14 +406,14 @@ var Volume = function () {
 
 			var segmentation = _this.segmentation.slice(axis, slice);
 
-			var x = undefined,
-			    y = undefined,
-			    segid = undefined;
+			var x = void 0,
+			    y = void 0,
+			    segid = void 0;
 
 			var color = [0, 0, 255];
 			var alpha = 0.25;
 
-			// exploting the fact that we know that there are
+			// exploting the fact that we know that there are 
 			// no black pixels in our channel images and that they're gray
 			for (var i = slice32.length - 1; i >= 0; i--) {
 				segid = segmentation[i];
@@ -424,9 +425,9 @@ var Volume = function () {
 
 				// overlayColor[i] + buffer[startIndex + i] * (1 - alpha);
 				if (_this.segments[segid]) {
-					pixels.data[i * 4 + 0] = Math.floor(pixels.data[i * 4 + 0] * (1 - alpha) + color[0] * alpha);
-					pixels.data[i * 4 + 1] = Math.floor(pixels.data[i * 4 + 1] * (1 - alpha) + color[1] * alpha);
-					pixels.data[i * 4 + 2] = Math.floor(pixels.data[i * 4 + 2] * (1 - alpha) + color[2] * alpha);
+					pixels.data[i * 4 + 0] = pixels.data[i * 4 + 0] * (1 - alpha) + color[0] * alpha | 0;
+					pixels.data[i * 4 + 1] = pixels.data[i * 4 + 1] * (1 - alpha) + color[1] * alpha | 0;
+					pixels.data[i * 4 + 2] = pixels.data[i * 4 + 2] * (1 - alpha) + color[2] * alpha | 0;
 				}
 			}
 
@@ -478,9 +479,9 @@ var Volume = function () {
 		key: "selectSegment",
 		value: function selectSegment(axis, slice, normx, normy) {
 			var _this = this;
-			var x = undefined,
-			    y = undefined,
-			    z = undefined;
+			var x = void 0,
+			    y = void 0,
+			    z = void 0;
 
 			var sizex = _this.segmentation.size.x,
 			    sizey = _this.segmentation.size.y;
@@ -525,6 +526,7 @@ var Volume = function () {
  * Return: self
  */
 
+
 var DataCube = function () {
 	function DataCube(args) {
 		_classCallCheck(this, DataCube);
@@ -540,6 +542,7 @@ var DataCube = function () {
 	}
 
 	// for internal use, makes a canvas for blitting images to
+
 
 	_createClass(DataCube, [{
 		key: "createImageContext",
@@ -602,9 +605,9 @@ var DataCube = function () {
 	}, {
 		key: "insertSquare",
 		value: function insertSquare(square, width) {
-			var offsetx = arguments.length <= 2 || arguments[2] === undefined ? 0 : arguments[2];
-			var offsety = arguments.length <= 3 || arguments[3] === undefined ? 0 : arguments[3];
-			var offsetz = arguments.length <= 4 || arguments[4] === undefined ? 0 : arguments[4];
+			var offsetx = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
+			var offsety = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 0;
+			var offsetz = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : 0;
 
 			var _this = this;
 
@@ -642,9 +645,9 @@ var DataCube = function () {
 	}, {
 		key: "insertCanvas",
 		value: function insertCanvas(canvas) {
-			var offsetx = arguments.length <= 1 || arguments[1] === undefined ? 0 : arguments[1];
-			var offsety = arguments.length <= 2 || arguments[2] === undefined ? 0 : arguments[2];
-			var offsetz = arguments.length <= 3 || arguments[3] === undefined ? 0 : arguments[3];
+			var offsetx = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
+			var offsety = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
+			var offsetz = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 0;
 
 			var ctx = canvas.getContext('2d');
 			var imgdata = ctx.getImageData(0, 0, canvas.width, canvas.height);
@@ -667,9 +670,9 @@ var DataCube = function () {
 	}, {
 		key: "insertImage",
 		value: function insertImage(img) {
-			var offsetx = arguments.length <= 1 || arguments[1] === undefined ? 0 : arguments[1];
-			var offsety = arguments.length <= 2 || arguments[2] === undefined ? 0 : arguments[2];
-			var offsetz = arguments.length <= 3 || arguments[3] === undefined ? 0 : arguments[3];
+			var offsetx = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
+			var offsety = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
+			var offsetz = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 0;
 
 			this.canvas_context.drawImage(img, 0, 0);
 			var imgdata = this.canvas_context.getImageData(0, 0, img.width, img.height);
@@ -697,7 +700,7 @@ var DataCube = function () {
 
 			var pixels = imgdata.data; // Uint8ClampedArray
 
-			// This viewing of the Uint8 as a Uint32 allows for
+			// This viewing of the Uint8 as a Uint32 allows for 
 			// a memory stride of 4x larger, making reading and writing cheaper
 			// as RAM is the slow thing here.
 			var data32 = new Uint32Array(pixels.buffer); // creates a view, not an array
@@ -716,9 +719,9 @@ var DataCube = function () {
 			// This solution of shifting the bits is elegant, but individual implementations
 			// for 1, 2, and 4 bytes would be more efficient.
 
-			var x = undefined,
-			    y = undefined,
-			    color = undefined;
+			var x = void 0,
+			    y = void 0,
+			    color = void 0;
 
 			var sizex = _this.size.x,
 			    zadj = offsetz * _this.size.x * _this.size.y;
@@ -726,7 +729,7 @@ var DataCube = function () {
 			if (this.isLittleEndian()) {
 				for (var i = data32.length - 1; i >= 0; i--) {
 					x = offsetx + i % width;
-					y = offsety + ~ ~(i / width); // ~~ is bit twidling Math.floor using bitwise not
+					y = offsety + (i / width | 0); // |0 is bit twidling Math.floor
 
 					// the shift operation below deletes unused higher values
 					// e.g. if we're in 8 bit, we want the R value from ABGR
@@ -735,11 +738,11 @@ var DataCube = function () {
 				}
 			} else {
 				// Untested.... don't have a big endian to test on
-				for (var i = data32.length - 1; i >= 0; i--) {
-					x = offsetx + i % width;
-					y = offsety + ~ ~(i / width); // ~~ is bit twidling Math.floor using bitwise not
+				for (var _i = data32.length - 1; _i >= 0; _i--) {
+					x = offsetx + _i % width;
+					y = offsety + (_i / width | 0); // |0 is bit twidling Math.floor 
 
-					color = data32[i] >>> shift << shift; // inverted compared to little endian
+					color = data32[_i] >>> shift << shift; // inverted compared to little endian
 
 					// rgba -> abgr in byte order
 
@@ -794,7 +797,7 @@ var DataCube = function () {
 	}, {
 		key: "slice",
 		value: function slice(axis, index) {
-			var buffer = arguments.length <= 2 || arguments[2] === undefined ? null : arguments[2];
+			var buffer = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : null;
 
 			var _this = this;
 
@@ -839,17 +842,17 @@ var DataCube = function () {
 				// possible to make this more efficient with an array memcpy
 				// as 256 x are consecutive, but no memcpy in browser.
 				var yoffset = xsize * index;
-				for (var z = zsize - 1; z >= 0; --z) {
+				for (var _z = zsize - 1; _z >= 0; --_z) {
 					for (var x = xsize - 1; x >= 0; --x) {
-						square[i] = _this.cube[x + yoffset + xysize * z];
+						square[i] = _this.cube[x + yoffset + xysize * _z];
 						--i;
 					}
 				}
 			} else if (axis === 'z') {
 				var zoffset = xysize * index;
-				for (var y = ysize - 1; y >= 0; --y) {
-					for (var x = xsize - 1; x >= 0; --x) {
-						square[i] = _this.cube[x + xsize * y + zoffset];
+				for (var _y = ysize - 1; _y >= 0; --_y) {
+					for (var _x11 = xsize - 1; _x11 >= 0; --_x11) {
+						square[i] = _this.cube[_x11 + xsize * _y + zoffset];
 						--i;
 					}
 				}
