@@ -81,7 +81,7 @@
 					var x = e.offsetX / $(this).innerWidth(), 
 						y = e.offsetY / $(this).innerHeight();
 
-					vol.selectSegment(AXIS, SLICE[AXIS], x, y);
+					vol.toggleSegment(AXIS, SLICE[AXIS], x, y);
 					render();
 				});
 			});

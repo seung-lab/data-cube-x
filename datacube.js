@@ -1,4 +1,4 @@
-"use strict";
+'use strict';
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
@@ -14,7 +14,6 @@ _loadingimg.src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAIAAAB
  * and segmentation (AI determined supervoxels)
  *
  * Required:
- *   task_id: (int) The task id representing a task in Eyewire
  *   channel: A blankable Datacube representing the channel values. 
  *        Since they're grayscale, an efficient representation is 1 byte
  *   segmentation: A blankable Datacube representing segmentation values.
@@ -27,16 +26,10 @@ var Volume = function () {
 	function Volume(args) {
 		_classCallCheck(this, Volume);
 
-		this.task_id = args.task_id;
-
 		this.channel = args.channel; // a data cube
 		this.segmentation = args.segmentation; // a segmentation cube
 
 		this.segments = {};
-
-		this.CHUNK_SIZE = 128; // Fixed in e2198
-		this.BUNDLE_SIZE = args.bundle_size || 64; // 128 = ~260kB, but fastest overall
-
 		this.requests = [];
 	}
 
@@ -50,7 +43,7 @@ var Volume = function () {
 
 
 	_createClass(Volume, [{
-		key: "load",
+		key: 'load',
 		value: function load() {
 			var _this = this;
 
@@ -66,20 +59,15 @@ var Volume = function () {
 
 			var deferred = $.Deferred();
 
-			$.getJSON("http://eyewire.org/1.0/task/" + this.task_id + "/volumes").done(function (task) {
-				var channel_promise = _this.loadVolume(task.channel_id, _this.channel);
-				//let channel_promise = _this.loadMovieVolume('./channel/channel.webm', _this.channel);
-				var seg_promise = _this.loadVolume(task.segmentation_id, _this.segmentation);
+			var channel_promise = _this.loadVolume('images/channel', _this.channel);
+			var seg_promise = _this.loadVolume('images/segmentation', _this.segmentation);
 
-				$.when(channel_promise, seg_promise).done(function () {
-					deferred.resolve();
-				}).fail(function () {
-					deferred.reject();
-				}).always(function () {
-					_this.requests = [];
-				});
+			$.when(channel_promise, seg_promise).done(function () {
+				deferred.resolve();
 			}).fail(function () {
 				deferred.reject();
+			}).always(function () {
+				_this.requests = [];
 			});
 
 			return deferred;
@@ -93,7 +81,7 @@ var Volume = function () {
    */
 
 	}, {
-		key: "loadingProgress",
+		key: 'loadingProgress',
 		value: function loadingProgress() {
 			if (this.segmentation.loaded && this.channel.loaded) {
 				return 1;
@@ -119,7 +107,7 @@ var Volume = function () {
    */
 
 	}, {
-		key: "abort",
+		key: 'abort',
 		value: function abort() {
 			this.requests.forEach(function (jqxhr) {
 				jqxhr.abort();
@@ -129,7 +117,7 @@ var Volume = function () {
 		// used for testing correctness of pixel values loaded into data cube
 
 	}, {
-		key: "fakeLoad",
+		key: 'fakeLoad',
 		value: function fakeLoad() {
 			if (!this.channel.clean) {
 				this.channel.clear();
@@ -148,7 +136,7 @@ var Volume = function () {
 		// used for testing correctness of pixel values loaded into data cube
 
 	}, {
-		key: "fakeLoadVolume",
+		key: 'fakeLoadVolume',
 		value: function fakeLoadVolume(vid, cube) {
 			// 8 * 4 chunks + 4 single tiles per channel
 			var _this = this;
@@ -168,78 +156,6 @@ var Volume = function () {
 			});
 		}
 
-		/* loadMovieVolume (EXPERIMENTAL)
-   *
-   * Used for loading the channel volume using a 
-   * movie to take advantage of the time-like spatial
-   * arrangement of the slices to achieve greater compression.
-   *
-   * Required:
-   *   [0] url: The URL of the video
-   *   [1] cube: The datacube to load with the images
-   *
-   * Return: promise representing completion
-   */
-
-	}, {
-		key: "loadMovieVolume",
-		value: function loadMovieVolume(url, cube) {
-			// 8 * 4 chunks + 4 single tiles per channel
-			var _this = this;
-
-			var video = $('<video>')[0];
-			video.src = url;
-			video.width = cube.size.x;
-			video.height = cube.size.y;
-			video.id = 'v';
-
-			// $('body').append(video);
-			// $(video).css({
-			// 	position: 'absolute',
-			// 	right: "10px",
-			// 	top: "10px",
-			// })
-
-			var deferred = $.Deferred();
-
-			var canvas = document.createElement('canvas');
-
-			var frame = 0;
-
-			var start = performance.now();
-
-			video.addEventListener('loadeddata', function () {
-				canvas.width = video.width;
-				canvas.height = video.height;
-
-				video.currentTime = 0;
-			});
-
-			video.addEventListener('seeked', function () {
-				if (frame >= cube.size.z) {
-					deferred.resolve();
-					console.log("Finish: " + (performance.now() - start));
-					return;
-				}
-
-				captureFrame(video, frame);
-
-				frame++;
-
-				var sec = frame / cube.size.z * video.duration;
-				video.currentTime = sec;
-			});
-
-			function captureFrame(video, z) {
-				var ctx = canvas.getContext('2d');
-				ctx.drawImage(video, 0, 0, video.width, video.height);
-				cube.insertCanvas(canvas, 0, 0, z);
-				$('#captures').text(z + 1);
-			}
-
-			return deferred;
-		}
-
 		/* loadVolume
    *
    * Download and materialize a particular Volume ID into a Datacube
@@ -253,46 +169,41 @@ var Volume = function () {
    */
 
 	}, {
-		key: "loadVolume",
-		value: function loadVolume(vid, cube) {
-			// 8 * 4 chunks + 4 single tiles per channel
+		key: 'loadVolume',
+		value: function loadVolume(dir, cube) {
 			var _this = this;
 
-			var specs = this.generateUrls(vid);
+			var specs = this.generateUrls(dir);
 
 			var requests = [];
 
-			specs.forEach(function (spec) {
-				function decodeAndInsertImages(results) {
-					var z = 0;
-					results.forEach(function (result) {
-						decodeBase64Image(result.data, z).done(function (imgz) {
-							cube.insertImage(imgz.img, spec.x, spec.y, spec.z + imgz.z);
-						});
-
-						z++;
-					});
+			function load_spec(spec, retries) {
+				if (retries > 2) {
+					throw new Error("Too many retries");
 				}
 
-				var getreq = $.getJSON(spec.url).done(decodeAndInsertImages).fail(function (jqxhr, statusText, error) {
-					// If it fails, one retry.
-					if (statusText === 'abort') {
-						return;
-					}
+				var img = new Image(spec.width, spec.height);
+				img.src = spec.url;
 
+				var req = $.Deferred();
+
+				img.onload = function () {
+					cube.insertImage(img, spec.x, spec.y, spec.z);
+					req.resolve();
+				};
+				img.onerror = function () {
+					req.reject();
 					setTimeout(function () {
-						var getreq2 = $.getJSON(spec.url).done(decodeAndInsertImages).fail(function () {
-							console.error(spec.url + ' failed to load.');
-						});
-
-						_this.requests.push(getreq2);
+						load_spec(spec, retries + 1);
 					}, 1000);
-				});
+				};
 
-				requests.push(getreq);
+				requests.push(req);
+			}
+
+			specs.forEach(function (spec) {
+				return load_spec(spec, 0);
 			});
-
-			this.requests.push.apply(this.requests, requests);
 
 			return $.when.apply($, requests).done(function () {
 				cube.loaded = true;
@@ -321,11 +232,7 @@ var Volume = function () {
    * Generate a set of url specifications required to download a whole 
    * volume in addition to the offsets since they're downloading.
    *
-   * Cubes 256x256x256 voxels and are downloaded as 128x128 chunks with
-   * a user specified depth. Smaller depths require more requests.
-   *
-   * Required:
-   *   [0] vid
+   * Cubes 256x256x256 voxels and are downloaded as slices.
    *
    * Return: [
    *    {
@@ -342,34 +249,24 @@ var Volume = function () {
    */
 
 	}, {
-		key: "generateUrls",
-		value: function generateUrls(vid) {
+		key: 'generateUrls',
+		value: function generateUrls(dir) {
 			var _this = this;
 
 			var specs = [];
+			for (var z = 0; z < 256; z++) {
+				var zstr = z < 10 ? '0' + z : z;
 
-			var CHUNK_SIZE = _this.CHUNK_SIZE,
-			    BUNDLE_SIZE = _this.BUNDLE_SIZE; // results in ~130kb downloads per request
-
-			for (var x = 0; x <= 1; x++) {
-				for (var y = 0; y <= 1; y++) {
-					for (var z = 0; z <= 1; z++) {
-						for (var range = 0; range <= CHUNK_SIZE - BUNDLE_SIZE; range += BUNDLE_SIZE) {
-							specs.push({
-								url: "http://cache.eyewire.org/volume/" + vid + "/chunk/0/" + x + "/" + y + "/" + z + "/tile/xy/" + range + ":" + (range + BUNDLE_SIZE),
-								x: x * CHUNK_SIZE,
-								y: y * CHUNK_SIZE,
-								z: z * CHUNK_SIZE + range,
-								width: CHUNK_SIZE,
-								height: CHUNK_SIZE,
-								depth: BUNDLE_SIZE
-							});
-						}
-					}
-				}
+				specs.push({
+					url: 'http://localhost:8000/' + dir + '/' + zstr + '.png',
+					x: 0,
+					y: 0,
+					z: z,
+					width: 256,
+					height: 256,
+					depth: 1
+				});
 			}
-
-			// handle current slice later
 
 			return specs;
 		}
@@ -389,7 +286,7 @@ var Volume = function () {
    */
 
 	}, {
-		key: "renderChannelSlice",
+		key: 'renderChannelSlice',
 		value: function renderChannelSlice(ctx, axis, slice) {
 			var _this = this;
 
@@ -451,7 +348,7 @@ var Volume = function () {
    */
 
 	}, {
-		key: "renderSegmentationSlice",
+		key: 'renderSegmentationSlice',
 		value: function renderSegmentationSlice(ctx, axis, slice) {
 			// Don't need to do anything special for segmentation since it's
 			// not user visible. Also, in the old version, the default image was black,
@@ -461,7 +358,7 @@ var Volume = function () {
 			return this;
 		}
 
-		/* selectSegment
+		/* toggleSegment
    *
    * Given an axis, slice index, and normalized x and y cursor coordinates
    * ([0, 1]), 0,0 being the top left, select the segment under the mouse.
@@ -476,8 +373,8 @@ var Volume = function () {
    */
 
 	}, {
-		key: "selectSegment",
-		value: function selectSegment(axis, slice, normx, normy) {
+		key: 'toggleSegment',
+		value: function toggleSegment(axis, slice, normx, normy) {
 			var _this = this;
 			var x = void 0,
 			    y = void 0,
@@ -501,7 +398,7 @@ var Volume = function () {
 			var segid = _this.segmentation.get(x, y, z);
 
 			if (segid > 0) {
-				_this.segments[segid] = true;
+				_this.segments[segid] = !_this.segments[segid];
 			}
 
 			return segid;
@@ -539,13 +436,19 @@ var DataCube = function () {
 
 		this.clean = true;
 		this.loaded = false;
+
+		this.faces = {
+			x: ['y', 'z'],
+			y: ['x', 'z'],
+			z: ['x', 'y']
+		};
 	}
 
 	// for internal use, makes a canvas for blitting images to
 
 
 	_createClass(DataCube, [{
-		key: "createImageContext",
+		key: 'createImageContext',
 		value: function createImageContext() {
 			var canvas = document.createElement('canvas');
 			canvas.width = this.size.x;
@@ -557,7 +460,7 @@ var DataCube = function () {
 		// for internal use, creates the data cube of the correct data type and size
 
 	}, {
-		key: "materialize",
+		key: 'materialize',
 		value: function materialize() {
 			var ArrayType = this.arrayType();
 
@@ -576,7 +479,7 @@ var DataCube = function () {
    */
 
 	}, {
-		key: "clear",
+		key: 'clear',
 		value: function clear() {
 			this.cube.fill(0);
 			this.clean = true;
@@ -603,7 +506,7 @@ var DataCube = function () {
    */
 
 	}, {
-		key: "insertSquare",
+		key: 'insertSquare',
 		value: function insertSquare(square, width) {
 			var offsetx = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
 			var offsety = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 0;
@@ -643,7 +546,7 @@ var DataCube = function () {
    */
 
 	}, {
-		key: "insertCanvas",
+		key: 'insertCanvas',
 		value: function insertCanvas(canvas) {
 			var offsetx = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
 			var offsety = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
@@ -668,7 +571,7 @@ var DataCube = function () {
    */
 
 	}, {
-		key: "insertImage",
+		key: 'insertImage',
 		value: function insertImage(img) {
 			var offsetx = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
 			var offsety = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
@@ -694,7 +597,7 @@ var DataCube = function () {
    */
 
 	}, {
-		key: "insertImageData",
+		key: 'insertImageData',
 		value: function insertImageData(imgdata, width, offsetx, offsety, offsetz) {
 			var _this = this;
 
@@ -758,12 +661,14 @@ var DataCube = function () {
    */
 
 	}, {
-		key: "get",
+		key: 'get',
 		value: function get(x, y, z) {
 			return this.cube[x + this.size.x * y + this.size.x * this.size.y * z];
 		}
 
-		/* Return a 2D slice of the data cube as a 1D array 
+		/* slice
+   * 
+   * Return a 2D slice of the data cube as a 1D array 
    * of the same type.
    * 
    * x axis gets a yz plane, y gets xz, and z gets xy.
@@ -773,17 +678,17 @@ var DataCube = function () {
    * Required:
    *   axis: x, y, or z
    *   index: 0 to size - 1 on that axis
-   *   
+   * 
    * Optional:
-   *    buffer: Write to this provided buffer instead of making one
+   *   [2] copy - allocates new memory if true, otherwise returns a view on the underlying arraybuffer
    *
    * Return: 1d array
    */
 
 	}, {
-		key: "slice",
+		key: 'slice',
 		value: function slice(axis, index) {
-			var buffer = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : null;
+			var copy = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : true;
 
 			var _this = this;
 
@@ -797,29 +702,29 @@ var DataCube = function () {
 
 			var xysize = xsize * ysize;
 
-			// Go super fast... just because we can
-			if (axis === 'z' && !buffer) {
-				return _this.cube.subarray(xysize * index, xysize * (index + 1));
-			}
-
-			var faces = {
-				x: ['y', 'z'],
-				y: ['x', 'z'],
-				z: ['x', 'y']
-			};
-
-			var face = faces[axis];
+			var face = this.faces[axis];
 			var ArrayType = this.arrayType();
 
-			var square = buffer || new ArrayType(this.size[face[0]] * this.size[face[1]]);
+			if (axis === 'z') {
+				var byteoffset = index * xysize * this.bytes;
+
+				if (copy) {
+					var buf = _this.cube.buffer.slice(byteoffset, byteoffset + xysize * this.bytes);
+					return new ArrayType(buf);
+				} else {
+					return new ArrayType(_this.cube.buffer, byteoffset, xysize);
+				}
+			}
+
+			var square = new ArrayType(this.size[face[0]] * this.size[face[1]]);
 
 			// Note: order of loops is important for efficient memory access
 			// and correct orientation of images. Consecutive x access is most efficient.
 
 			var i = square.length - 1;
 			if (axis === 'x') {
-				for (var y = ysize - 1; y >= 0; --y) {
-					for (var z = zsize - 1; z >= 0; --z) {
+				for (var z = zsize - 1; z >= 0; --z) {
+					for (var y = ysize - 1; y >= 0; --y) {
 						square[i] = _this.cube[index + xsize * y + xysize * z];
 						--i;
 					}
@@ -831,14 +736,6 @@ var DataCube = function () {
 				for (var _z = zsize - 1; _z >= 0; --_z) {
 					for (var x = xsize - 1; x >= 0; --x) {
 						square[i] = _this.cube[x + yoffset + xysize * _z];
-						--i;
-					}
-				}
-			} else if (axis === 'z') {
-				var zoffset = xysize * index;
-				for (var _y = ysize - 1; _y >= 0; --_y) {
-					for (var _x11 = xsize - 1; _x11 >= 0; --_x11) {
-						square[i] = _this.cube[_x11 + xsize * _y + zoffset];
 						--i;
 					}
 				}
@@ -860,7 +757,7 @@ var DataCube = function () {
    */
 
 	}, {
-		key: "imageSlice",
+		key: 'imageSlice',
 		value: function imageSlice(axis, index) {
 			var _this = this;
 
@@ -922,7 +819,7 @@ var DataCube = function () {
    */
 
 	}, {
-		key: "grayImageSlice",
+		key: 'grayImageSlice',
 		value: function grayImageSlice(axis, index) {
 			var _this = this;
 
@@ -970,7 +867,7 @@ var DataCube = function () {
    */
 
 	}, {
-		key: "renderImageSlice",
+		key: 'renderImageSlice',
 		value: function renderImageSlice(context, axis, index) {
 			var imgdata = this.imageSlice(axis, index);
 			context.putImageData(imgdata, 0, 0);
@@ -991,7 +888,7 @@ var DataCube = function () {
    */
 
 	}, {
-		key: "renderGrayImageSlice",
+		key: 'renderGrayImageSlice',
 		value: function renderGrayImageSlice(context, axis, index) {
 			var imgdata = this.grayImageSlice(axis, index);
 			context.putImageData(imgdata, 0, 0);
@@ -1001,7 +898,7 @@ var DataCube = function () {
 		// http://stackoverflow.com/questions/504030/javascript-endian-encoding
 
 	}, {
-		key: "isLittleEndian",
+		key: 'isLittleEndian',
 		value: function isLittleEndian() {
 			var arr32 = new Uint32Array(1);
 			var arr8 = new Uint8Array(arr32.buffer);
@@ -1014,7 +911,7 @@ var DataCube = function () {
 		// depending on CPU endianess.
 
 	}, {
-		key: "getRenderMaskSet",
+		key: 'getRenderMaskSet',
 		value: function getRenderMaskSet() {
 			var bitmasks = {
 				true: { // little endian, most architectures
@@ -1045,7 +942,7 @@ var DataCube = function () {
    */
 
 	}, {
-		key: "arrayType",
+		key: 'arrayType',
 		value: function arrayType() {
 			var choices = {
 				1: Uint8ClampedArray,

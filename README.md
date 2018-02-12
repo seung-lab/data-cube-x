@@ -52,6 +52,15 @@ You can grab single values:
 
 vol.size.x, vol.size.y, vol.size.z gives you the parameters neceessary to work with that
 
+# Using Example Data
+
+Run a python static file server like so from the images directory:
+
+python -m http.server 8000
+
+Then access the application from:
+
+http://localhost:8000/index.html
 
 
 

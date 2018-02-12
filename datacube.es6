@@ -8,7 +8,6 @@ _loadingimg.src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAIAAAB
  * and segmentation (AI determined supervoxels)
  *
  * Required:
- *   task_id: (int) The task id representing a task in Eyewire
  *   channel: A blankable Datacube representing the channel values. 
  *        Since they're grayscale, an efficient representation is 1 byte
  *   segmentation: A blankable Datacube representing segmentation values.
@@ -18,16 +17,10 @@ _loadingimg.src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAIAAAB
  */
 class Volume {
 	constructor (args) {
-		this.task_id = args.task_id;
-
 		this.channel = args.channel; // a data cube
 		this.segmentation = args.segmentation; // a segmentation cube
 
 		this.segments = {};
-
-		this.CHUNK_SIZE = 128; // Fixed in e2198
-		this.BUNDLE_SIZE = args.bundle_size || 64; // 128 = ~260kB, but fastest overall
-
 		this.requests = [];
 	}
 
@@ -53,25 +46,18 @@ class Volume {
 
 		let deferred = $.Deferred();
 
-		$.getJSON("http://eyewire.org/1.0/task/" + this.task_id + "/volumes")
-			.done(function (task) {
-				let channel_promise = _this.loadVolume(task.channel_id, _this.channel);
-				//let channel_promise = _this.loadMovieVolume('./channel/channel.webm', _this.channel);
-				let seg_promise = _this.loadVolume(task.segmentation_id, _this.segmentation);
+		let channel_promise = _this.loadVolume('images/channel', _this.channel);
+		let seg_promise = _this.loadVolume('images/segmentation', _this.segmentation);
 
-				$.when(channel_promise, seg_promise)
-					.done(function () {
-						deferred.resolve();
-					})
-					.fail(function () {
-						deferred.reject();
-					})
-					.always(function () {
-						_this.requests = [];
-					});
+		$.when(channel_promise, seg_promise)
+			.done(function () {
+				deferred.resolve();
 			})
 			.fail(function () {
 				deferred.reject();
+			})
+			.always(function () {
+				_this.requests = [];
 			});
 
 		return deferred;
@@ -147,75 +133,6 @@ class Volume {
 		});
 	}
 
-	/* loadMovieVolume (EXPERIMENTAL)
-	 *
-	 * Used for loading the channel volume using a 
-	 * movie to take advantage of the time-like spatial
-	 * arrangement of the slices to achieve greater compression.
-	 *
-	 * Required:
-	 *   [0] url: The URL of the video
-	 *   [1] cube: The datacube to load with the images
-	 *
-	 * Return: promise representing completion
-	 */
-	loadMovieVolume (url, cube) {
-		// 8 * 4 chunks + 4 single tiles per channel
-		let _this = this;
-
-		let video = $('<video>')[0];
-		video.src = url;
-		video.width = cube.size.x;
-		video.height = cube.size.y;
-		video.id = 'v';
-
-		// $('body').append(video);
-		// $(video).css({
-		// 	position: 'absolute',
-		// 	right: "10px",
-		// 	top: "10px",
-		// })
-
-		let deferred = $.Deferred();
-
-		let canvas = document.createElement('canvas');
-
-		let frame = 0;
-
-		var start = performance.now();
-
-		video.addEventListener('loadeddata', function() {
-			canvas.width = video.width;
-			canvas.height = video.height;
-
-			video.currentTime = 0;
-		});
-
-		video.addEventListener('seeked', function () {
-			if (frame >= cube.size.z) {
-				deferred.resolve();
-				console.log("Finish: " + (performance.now() - start) )
-				return;
-			}
-
-			captureFrame(video, frame);
-
-			frame++;
-
-			var sec = (frame / cube.size.z) * video.duration;
-			video.currentTime = sec;
-		});
-
-		function captureFrame (video, z) {
-			let ctx = canvas.getContext('2d');
-			ctx.drawImage(video, 0, 0, video.width, video.height);
-			cube.insertCanvas(canvas, 0, 0, z);
-			$('#captures').text(z + 1);
-		}
-
-		return deferred;
-	}
-
 	/* loadVolume
 	 *
 	 * Download and materialize a particular Volume ID into a Datacube
@@ -227,48 +144,38 @@ class Volume {
 	 *
 	 * Return: promise representing loading completion
 	 */
-	loadVolume (vid, cube) {
-		// 8 * 4 chunks + 4 single tiles per channel
+	loadVolume (dir, cube) {
 		let _this = this;
 
-		let specs = this.generateUrls(vid);
+		let specs = this.generateUrls(dir);
 
 		let requests = [];
 
-		specs.forEach(function (spec) {
-			function decodeAndInsertImages (results) {
-				let z = 0;
-				results.forEach(function (result) {
-					decodeBase64Image(result.data, z).done(function (imgz) {
-						cube.insertImage(imgz.img, spec.x, spec.y, spec.z + imgz.z);
-					});
-
-					z++;
-				});
+		function load_spec (spec, retries) {
+			if (retries > 2) {
+				throw new Error("Too many retries");
 			}
 
-			let getreq = $.getJSON(spec.url)
-				.done(decodeAndInsertImages)
-				.fail(function (jqxhr, statusText, error) { // If it fails, one retry.
-					if (statusText === 'abort') {
-						return;
-					}
+			let img = new Image(spec.width, spec.height);
+			img.src = spec.url;
+			
+			let req = $.Deferred();
 
-					setTimeout(function () {
-						let getreq2 = $.getJSON(spec.url)
-							.done(decodeAndInsertImages)
-							.fail(function () {
-								console.error(spec.url + ' failed to load.');
-							});
+			img.onload = function () {
+    			cube.insertImage(img, spec.x, spec.y, spec.z);
+    			req.resolve();
+  			};
+  			img.onerror = function () {
+  				req.reject();
+  				setTimeout(function () {
+  					load_spec(spec, retries + 1)
+  				}, 1000)
+  			};
 
-						_this.requests.push(getreq2);
-					}, 1000);
-				})
+			requests.push(req);
+		}
 
-			requests.push(getreq);
-		})
-
-		this.requests.push.apply(this.requests, requests);
+		specs.forEach((spec) => load_spec(spec, 0))
 
 		return $.when.apply($, requests).done(function () {
 			cube.loaded = true;
@@ -297,11 +204,7 @@ class Volume {
 	 * Generate a set of url specifications required to download a whole 
 	 * volume in addition to the offsets since they're downloading.
 	 *
-	 * Cubes 256x256x256 voxels and are downloaded as 128x128 chunks with
-	 * a user specified depth. Smaller depths require more requests.
-	 *
-	 * Required:
-	 *   [0] vid
+	 * Cubes 256x256x256 voxels and are downloaded as slices.
 	 *
 	 * Return: [
 	 *    {
@@ -316,33 +219,23 @@ class Volume {
 	 *    ...
 	 * ]
 	 */
-	generateUrls (vid) {
+	generateUrls (dir) {
 		let _this = this;
 
 		let specs = [];
+		for (let z = 0; z < 256; z++) {
+			let zstr = z < 10 ? '0' + z : z;
 
-		let CHUNK_SIZE = _this.CHUNK_SIZE,
-			BUNDLE_SIZE = _this.BUNDLE_SIZE; // results in ~130kb downloads per request
-
-		for (let x = 0; x <= 1; x++) {
-			for (let y = 0; y <= 1; y++) {
-				for (let z = 0; z <= 1; z++) {
-					for (let range = 0; range <= CHUNK_SIZE - BUNDLE_SIZE; range += BUNDLE_SIZE) {
-						specs.push({
-							url: "http://cache.eyewire.org/volume/" + vid + "/chunk/0/" + x + "/" + y + "/" + z + "/tile/xy/" + range + ":" + (range + BUNDLE_SIZE),
-							x: x * CHUNK_SIZE,
-							y: y * CHUNK_SIZE,
-							z: z * CHUNK_SIZE + range,
-							width: CHUNK_SIZE,
-							height: CHUNK_SIZE,
-							depth: BUNDLE_SIZE,
-						});
-					}
-				}
-			}			
+			specs.push({
+				url: `http://localhost:8000/${dir}/${zstr}.png`,
+				x: 0,
+				y: 0,
+				z: z,
+				width: 256,
+				height: 256,
+				depth: 1,
+			});
 		}
-
-		// handle current slice later
 
 		return specs;
 	}
@@ -426,7 +319,7 @@ class Volume {
 		return this;
 	}
 
-	/* selectSegment
+	/* toggleSegment
 	 *
 	 * Given an axis, slice index, and normalized x and y cursor coordinates
 	 * ([0, 1]), 0,0 being the top left, select the segment under the mouse.
@@ -439,7 +332,7 @@ class Volume {
 	 *
 	 * Return: segid
 	 */
-	selectSegment (axis, slice, normx, normy) {
+	toggleSegment (axis, slice, normx, normy) {
 		let _this = this;
 		let x,y,z;
 
@@ -469,7 +362,7 @@ class Volume {
 		let segid = _this.segmentation.get(x, y, z);
 		
 		if (segid > 0) {
-			_this.segments[segid] = true;
+			_this.segments[segid] = !_this.segments[segid];
 		}
 
 		return segid;
@@ -500,6 +393,12 @@ class DataCube {
 
 		this.clean = true;
 		this.loaded = false;
+
+		this.faces = {
+			x: [ 'y', 'z' ],
+			y: [ 'x', 'z' ],
+			z: [ 'x', 'y' ],
+		};
 	}
 
 	// for internal use, makes a canvas for blitting images to
