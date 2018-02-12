@@ -227,7 +227,7 @@ class Volume {
 			let zstr = z < 10 ? '0' + z : z;
 
 			specs.push({
-				url: `http://localhost:8000/${dir}/${zstr}.png`,
+				url: `/${dir}/${zstr}.png`,
 				x: 0,
 				y: 0,
 				z: z,

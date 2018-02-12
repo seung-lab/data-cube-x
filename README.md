@@ -54,7 +54,7 @@ vol.size.x, vol.size.y, vol.size.z gives you the parameters neceessary to work w
 
 # Using Example Data
 
-Run a python static file server like so from the images directory:
+Run a python static file server like so from the data-cube-x top-level directory:
 
 python -m http.server 8000
 
