@@ -82,6 +82,20 @@
 						y = e.offsetY / $(this).innerHeight();
 
 					vol.toggleSegment(AXIS, SLICE[AXIS], x, y);
+
+					if (AXIS == 'z') {
+						SLICE.x = (x * 255)|0;
+						SLICE.y = (y * 255)|0;
+					}
+					else if (AXIS == 'y') {
+						SLICE.x = (x * 255)|0;
+						SLICE.z = (y * 255)|0;
+					}
+					else if (AXIS == 'x') {
+						SLICE.y = (x * 255)|0;
+						SLICE.z = (y * 255)|0;
+					}
+
 					render();
 				});
 			});

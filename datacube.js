@@ -301,7 +301,7 @@ var Volume = function () {
 			var pixels = _this.channel.grayImageSlice(axis, slice);
 			var slice32 = new Uint32Array(pixels.data.buffer); // creates a view, not an array
 
-			var segmentation = _this.segmentation.slice(axis, slice);
+			var segmentation = _this.segmentation.slice(axis, slice, /*copy=*/false);
 
 			var x = void 0,
 			    y = void 0,
@@ -381,14 +381,15 @@ var Volume = function () {
 			    z = void 0;
 
 			var sizex = _this.segmentation.size.x,
-			    sizey = _this.segmentation.size.y;
+			    sizey = _this.segmentation.size.y,
+			    sizez = _this.segmentation.size.z;
 
 			if (axis === 'x') {
-				x = slice, y = normy * _this.segmentation.size.y, z = normx * _this.segmentation.size.z;
+				x = slice, y = normx * sizey, z = normy * sizez;
 			} else if (axis === 'y') {
-				x = normx * _this.segmentation.size.x, y = slice, z = normy * _this.segmentation.size.z;
+				x = normx * sizex, y = slice, z = normy * sizez;
 			} else if (axis === 'z') {
-				x = normx * _this.segmentation.size.x, y = normy * _this.segmentation.size.y, z = slice;
+				x = normx * sizex, y = normy * sizey, z = slice;
 			}
 
 			x = Math.round(x);

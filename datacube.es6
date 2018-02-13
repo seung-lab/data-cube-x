@@ -337,21 +337,22 @@ class Volume {
 		let x,y,z;
 
 		let sizex = _this.segmentation.size.x,
-			sizey = _this.segmentation.size.y;
+			sizey = _this.segmentation.size.y,
+			sizez = _this.segmentation.size.z;
 
 		if (axis === 'x') {
 			x = slice,
-			y = normy * _this.segmentation.size.y,
-			z = normx * _this.segmentation.size.z;
+			y = normx * sizey,
+			z = normy * sizez;
 		}
 		else if (axis === 'y') {
-			x = normx * _this.segmentation.size.x,
+			x = normx * sizex,
 			y = slice,
-			z = normy * _this.segmentation.size.z;
+			z = normy * sizez;
 		}
 		else if (axis === 'z') {
-			x = normx * _this.segmentation.size.x,
-			y = normy * _this.segmentation.size.y,
+			x = normx * sizex,
+			y = normy * sizey,
 			z = slice;
 		}
 
