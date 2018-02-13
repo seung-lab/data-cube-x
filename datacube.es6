@@ -267,7 +267,7 @@ class Volume {
 		let pixels = _this.channel.grayImageSlice(axis, slice);
 		let slice32 = new Uint32Array(pixels.data.buffer); // creates a view, not an array
 
-		let segmentation = _this.segmentation.slice(axis, slice);
+		let segmentation = _this.segmentation.slice(axis, slice, /*copy=*/false);
 
 		let x, y, segid;
 
