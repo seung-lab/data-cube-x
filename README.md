@@ -62,6 +62,11 @@ Then access the application from:
 
 http://localhost:8000/index.html
 
-
+The example data is taken from mouse somatosensory cortex (S1) and a prototype reconstruction.
+    
+    Kasthuri et al. "Saturated Reconstruction of a Volume of Neocortex." Cell 2015.
+    DOI: 10.1016/j.cell.2015.06.054
+    
+    Cutout parameters (voxels xyz): 8319:8319+256, 6189:6189+256, 449:449+256
 
 
