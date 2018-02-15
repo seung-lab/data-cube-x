@@ -175,7 +175,7 @@ var Volume = function () {
 
 			var specs = this.generateUrls(dir);
 
-			var requests = [];
+			// _this.requests = [];
 
 			function load_spec(spec, retries) {
 				if (retries > 2) {
@@ -198,14 +198,14 @@ var Volume = function () {
 					}, 1000);
 				};
 
-				requests.push(req);
+				_this.requests.push(req);
 			}
 
 			specs.forEach(function (spec) {
 				return load_spec(spec, 0);
 			});
 
-			return $.when.apply($, requests).done(function () {
+			return $.when.apply($, _this.requests).done(function () {
 				cube.loaded = true;
 			});
 

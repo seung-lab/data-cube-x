@@ -149,7 +149,7 @@ class Volume {
 
 		let specs = this.generateUrls(dir);
 
-		let requests = [];
+		// _this.requests = [];
 
 		function load_spec (spec, retries) {
 			if (retries > 2) {
@@ -172,12 +172,12 @@ class Volume {
   				}, 1000)
   			};
 
-			requests.push(req);
+			_this.requests.push(req);
 		}
 
 		specs.forEach((spec) => load_spec(spec, 0))
 
-		return $.when.apply($, requests).done(function () {
+		return $.when.apply($, _this.requests).done(function () {
 			cube.loaded = true;
 		});
 
