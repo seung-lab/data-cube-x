@@ -46,8 +46,8 @@ class Volume {
 
 		let deferred = $.Deferred();
 
-		let channel_promise = _this.loadVolume('images/channel', _this.channel);
-		let seg_promise = _this.loadVolume('images/segmentation', _this.segmentation);
+		let channel_promise = _this.loadVolume('channel', _this.channel);
+		let seg_promise = _this.loadVolume('segmentation', _this.segmentation);
 
 		$.when(channel_promise, seg_promise)
 			.done(function () {
@@ -122,7 +122,8 @@ class Volume {
 			}
 
 			let img = new Image(spec.width, spec.height);
-			img.src = spec.url;
+			img.crossOrigin = "Anonymous";
+			img.src = 'https://storage.googleapis.com/data-cube-x/' + spec.url;
 			
 			let req = $.Deferred();
 
@@ -175,7 +176,7 @@ class Volume {
 			let zstr = z < 10 ? '0' + z : z;
 
 			specs.push({
-				url: `/${dir}/${zstr}.png`,
+				url: `${dir}/${zstr}.png`,
 				x: 0,
 				y: 0,
 				z: z,
