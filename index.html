@@ -98,6 +98,8 @@
 
 					render();
 				});
+
+				loop();
 			});
 
 			$(document).on('wheel', function (e) {
@@ -187,13 +189,13 @@
 				return Math.min(Math.max(val, min), max);
 			}
 
-			requestAnimationFrame(function loop () {
+			function loop () {
 				if (_needsrender) {
 					hardRender();
 				}
 
 				requestAnimationFrame(loop);
-			});
+			}
 
 		</script>
 	</head>
