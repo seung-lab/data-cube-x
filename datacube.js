@@ -98,41 +98,6 @@ class Volume {
 		});
 	}
 
-	// used for testing correctness of pixel values loaded into data cube
-	fakeLoad () {
-		if (!this.channel.clean) {
-			this.channel.clear();
-		}
-
-		if (!this.segmentation.clean) {
-			this.segmentation.clear();
-		}
-
-		let channel_promise = this.fakeLoadVolume(this.channel_id, this.channel);
-		let seg_promise = this.fakeLoadVolume(this.segmentation_id, this.segmentation);
-
-		return $.when(channel_promise, seg_promise);
-	}
-
-	// used for testing correctness of pixel values loaded into data cube
-	fakeLoadVolume (vid, cube) {
-		// 8 * 4 chunks + 4 single tiles per channel
-		let _this = this;
-
-		let specs = this.generateUrls(vid);
-
-		specs.forEach(function (spec) {
-			let img = new Image(128, 128); // test code
-			for (let i = 0; i < spec.depth; i++) {
-				cube.insertImage(img, spec.x, spec.y, spec.z + i);
-			}
-		});
-
-		return $.Deferred().resolve().done(function () { // test code
-			cube.loaded = true;
-		});
-	}
-
 	/* loadVolume
 	 *
 	 * Download and materialize a particular Volume ID into a Datacube
@@ -180,23 +145,6 @@ class Volume {
 		return $.when.apply($, _this.requests).done(function () {
 			cube.loaded = true;
 		});
-
-		function decodeBase64Image (base64, z) {
-			let imageBuffer = new Image();
-
-			let deferred = $.Deferred();
-
- 		 	imageBuffer.onload = function () {
-    			deferred.resolve({
-    				img: this,
-    				z: z,
-    			});
-  			};
-
-  			imageBuffer.src = base64;
-
-  			return deferred;
-		}
 	}
 
 	/* generateUrls

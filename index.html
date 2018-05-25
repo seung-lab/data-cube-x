@@ -2,7 +2,6 @@
 	<head>
 		<title>Datacube Render Test | Eyewire</title>
 		<script src="./jquery-2.2.0.min.js"></script>
-		<script src="./FileSaver.js"></script>
 		<script src="./datacube.js"></script>
 
 		<style>
@@ -37,7 +36,6 @@
 				};
 
 				window.vol = new Volume({ 
-					task_id: 332,
 					channel: new DataCube({ 
 						bytes: 1,
 						size: size,
@@ -142,30 +140,6 @@
 				SLICE[AXIS] = clamp(SLICE[AXIS], 0, 255);
 				render();
 			})
-
-			function saveStack () {
-				var canvas = document.createElement('canvas');
-				canvas.width = 256;
-				canvas.height = 256;
-				var ctx = canvas.getContext('2d');
-
-				function genimg (i) {
-					if (i >= 256) {
-						return;
-					}
-
-					var cimg = new Image(256, 256);
-					//var simg = new Image(256, 256);
-					vol.segmentation.renderImageSlice(ctx, 'z', i);
-
-					canvas.toBlob(function (blob) {
-					  saveAs(blob, i + ".png");
-					  genimg(i+1);
-					});
-				}
-
-				genimg(0);
-			}
 
 			function render () {
 				_needsrender = true;
