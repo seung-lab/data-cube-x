@@ -79,7 +79,7 @@ insertImage(img, offsetx=0, offsety=0, offsetz=0)|Write XY oriented Image into c
 insertCanvas(canvas, offsetx=0, offsety=0, offsetz=0)|Write XY oriented Canvas into cube at offset
 insertSquare(square, width, offsetx=0, offsety=0, offsetz=0)|Write an XY oriented plane into the cube as from a 1D array representation.
 slice (axis, index, copy = true)|Return a 2D slice of the data cube as a 1D array in XYZ order.
-renderImageSlice(context, axis, index)|Render a grayscale 2D axial slice to a canvas context.
+renderGrayImageSlice(context, axis, index)|Render a grayscale 2D axial slice to a canvas context.
 renderImageSlice(context, axis, index)|Render a color 2D axial slice to a canvas context.
 
 
