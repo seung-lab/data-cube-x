@@ -26,7 +26,7 @@ a performance limitation, let us know.
 
 Requires jQuery to use `Volume` but not base `DataCube`.
 
-```
+```html
 <script src="path/to/datacube.js"></script>
 ```
 
