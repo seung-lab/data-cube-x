@@ -85,7 +85,7 @@ renderImageSlice(context, axis, index)|Render a color 2D axial slice to a canvas
 
 ### Examples
 
-```
+```javascript
 var dc = new DataCube({
 	bytes: 1, // 8-bit gray data for an EM image, 16-bit is 2, etc
 	size: { x: 256, y: 256, z: 256 }, // dimensions in voxels
@@ -122,7 +122,7 @@ dc.renderImageSlice(ctx, 'y', 8); // XZ plane, slice 8
 
 `Volume` is currently provided in the library as a guide for hacking with `DataCube`. To use it for youself, you'll need to manipulate `generateUrls` and `loadVolume`.
 
-```
+```javascript
 var vol = new Volume({ 
 	channel: new DataCube({ bytes: 1, size: [ 256, 256, 256 ] }), 
 	segmentation: new DataCube({ bytes: 2, size: [ 256, 256, 256 ] }), 
@@ -148,20 +148,20 @@ vol.load().done(function () {
 
 You can also access the cube data as squares -- planes that cut through the cube on an axis:
 
-```
-vol.channel.slice('x', 52) => 1D array of 8 bit values, arranged as x,y,z
-vol.segmentation.slice('z', 156) => 1D array of 16 bit values, arranged as x,y,z
+```javascript
+vol.channel.slice('x', 52) // => 1D array of 8 bit values, arranged as x,y,z
+vol.segmentation.slice('z', 156) // => 1D array of 16 bit values, arranged as x,y,z
 ```
 You can grab single values:
 
-```
-vol.channel.get(35, 12, 0) => Single integer value at x=35, y=12, z=0
+```javascript
+vol.channel.get(35, 12, 0) // => Single integer value at x=35, y=12, z=0
 ```
 
 ...or if you really need to, you can access the cube directly:
 
-```
-vol.channel.cube => 1D array representing the whole 3D cube
+```javascript
+vol.channel.cube // => 1D array representing the whole 3D cube
 ```
 
 vol.size.x, vol.size.y, vol.size.z gives you the parameters neceessary to work with that
