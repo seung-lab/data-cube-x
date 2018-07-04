@@ -318,6 +318,22 @@ class Volume {
 	}
 }
 
+class CachedImageData {
+    constructor (context) {
+        this.context = context;
+        this.cache = null;
+    }
+
+    getImageData(width, height) {
+        if (!this.cache || this.cache.width !== width || this.cache.height !== height) {
+            this.cache = this.context.createImageData(width, height);
+        }
+
+        return this.cache;
+    }
+}
+
+
 /* DataCube
  *
  * Efficiently represents a 3D image as a 1D array of integer values.
@@ -339,6 +355,7 @@ class DataCube {
 		this.cube = this.materialize();
 
 		this.canvas_context = this.createImageContext();
+		this.cached_imgdata = new CachedImageData(this.canvas_context);
 
 		this.clean = true;
 		this.loaded = false;
@@ -348,6 +365,14 @@ class DataCube {
 			y: [ 'x', 'z' ],
 			z: [ 'x', 'y' ],
 		};
+	}
+
+	faceDimensions (axis) {
+		let face = this.faces[axis];
+		return [
+			this.size[face[0]],
+			this.size[face[1]]
+		];
 	}
 
 	// for internal use, makes a canvas for blitting images to
@@ -679,37 +704,42 @@ class DataCube {
 	 * Required:
 	 *   [0] axis: 'x', 'y', or 'z'
 	 *   [1] index: 0 - axis size - 1
+	 * Optional:
+	 *   [2] transparency - black pixels are transparent
+	 *   [3] copy - whether to allocate new memory (true) or reuse a shared cache for this function (false)
 	 *
 	 * Return: imagedata
 	 */
-	grayImageSlice (axis, index) {
+	grayImageSlice (axis, index, transparency=false, copy=true) {
 		let _this = this;
 
 		let square = this.slice(axis, index, /*copy=*/false);
 
-		let sizes = {
-			x: [ _this.size.y, _this.size.z ],
-			y: [ _this.size.x, _this.size.z ],
-			z: [ _this.size.x, _this.size.y ],
-		};
+		let sizes = this.faceDimensions(axis);
 
-		let size = sizes[axis];
-
-		let imgdata = this.canvas_context.createImageData(size[0], size[1]);
+		let imgdata = copy
+			? this.canvas_context.createImageData(sizes[0], sizes[1])
+			: this.cached_imgdata.getImageData(sizes[0], sizes[1]);
 
 		let maskset = this.getRenderMaskSet();
 
-		const rmask = maskset.r;
-		let data = imgdata.data;
+		let data32 = new Uint32Array(imgdata.data.buffer);
 
-		let di = data.length - 4;
-		for (let si = square.length - 1; si >= 0; si--) {
-			data[di + 0] = (square[si] & rmask); 
-			data[di + 1] = (square[si] & rmask);
-			data[di + 2] = (square[si] & rmask);
-			data[di + 3] = 255; 
-				
-			di -= 4;
+		const alpha = this.isLittleEndian() 
+			? 0xff000000
+			: 0x000000ff;
+
+		let i = 0;
+		
+		if (transparency) {
+			for (i = square.length - 1; i >= 0; i--) {
+				data32[i] = (square[i] | square[i] << 8 | square[i] << 16 | (square[i] && alpha));
+			}
+		}
+		else {
+			for (i = square.length - 1; i >= 0; i--) {
+				data32[i] = (square[i] | square[i] << 8 | square[i] << 16 | alpha);
+			}
 		}
 
 		return imgdata;
