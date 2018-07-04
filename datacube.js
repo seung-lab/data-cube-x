@@ -647,28 +647,19 @@ class DataCube {
 	 *
 	 * Return: imagedata
 	 */
-	imageSlice (axis, index) {
+	imageSlice (axis, index, copy=true) {
 		let _this = this;
 
 		let square = this.slice(axis, index, /*copy=*/false);
-
-		let sizes = {
-			x: [ _this.size.y, _this.size.z ],
-			y: [ _this.size.x, _this.size.z ],
-			z: [ _this.size.x, _this.size.y ],
-		};
-
-		let size = sizes[axis];
+		let sizes = this.faceDimensions(axis);
 
 		// see https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API/Tutorial/Pixel_manipulation_with_canvas
-		let imgdata = this.canvas_context.createImageData(size[0], size[1]);
+		let imgdata = copy
+			? this.canvas_context.createImageData(sizes[0], sizes[1])
+			: this.cached_imgdata.getImageData(sizes[0], sizes[1]);
 
 		let maskset = this.getRenderMaskSet();
-
-		const rmask = maskset.r,
-			gmask = maskset.g,
-			bmask = maskset.b,
-			amask = maskset.a;
+		const alphamask = maskset.a;
 
 		// if we break this for loop up by bytes, we can extract extra performance.
 		// If we want to handle transparency efficiently, you'll want to break out the
@@ -678,19 +669,17 @@ class DataCube {
 		// This code seemed more elegant to me though, so I won't prematurely optimize.
 
 		let data = imgdata.data;
+		let data32 = new Uint32Array(data.buffer);
 
-		let fixedalpha = this.bytes === 4 // no alpha channel w/ less than 4 bytes
-			? 0x00000000 
-			: 0xffffffff;
-
-		let di = data.length - 4;
-		for (let si = square.length - 1; si >= 0; si--) {
-			data[di + 0] = (square[si] & rmask); 
-			data[di + 1] = (square[si] & gmask) >>> 8;
-			data[di + 2] = (square[si] & bmask) >>> 16;
-			data[di + 3] = ((square[si] & amask) | fixedalpha) >>> 24; // can handle transparency specially if necessary
-				
-			di -= 4;
+		if (this.bytes < 4) {
+			for (let i = square.length - 1; i >= 0; i--) {
+				data32[i] = square[i] | alphamask; 
+			}
+		}
+		else {
+			for (let i = square.length - 1; i >= 0; i--) {
+				data32[i] = square[i]; 
+			}
 		}
 
 		return imgdata;
@@ -758,7 +747,7 @@ class DataCube {
 	 * Return: this
 	 */
 	renderImageSlice (context, axis, index) {
-		var imgdata = this.imageSlice(axis, index);
+		var imgdata = this.imageSlice(axis, index, false);
 		context.putImageData(imgdata, 0, 0);
 		return this;
 	}
