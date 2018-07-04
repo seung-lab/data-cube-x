@@ -212,7 +212,7 @@ class Volume {
 		let loading = ctx.getImageData(0, 0, 256, 256);
 		let loading32 = new Uint32Array(loading.data.buffer);
 
-		let pixels = _this.channel.grayImageSlice(axis, slice);
+		let pixels = _this.channel.grayImageSlice(axis, slice, /*transparency=*/false, /*copy=*/false);
 		let slice32 = new Uint32Array(pixels.data.buffer); // creates a view, not an array
 
 		let segmentation = _this.segmentation.slice(axis, slice, /*copy=*/false);
@@ -730,7 +730,7 @@ class DataCube {
 			: 0x000000ff;
 
 		let i = 0;
-		
+
 		if (transparency) {
 			for (i = square.length - 1; i >= 0; i--) {
 				data32[i] = (square[i] | square[i] << 8 | square[i] << 16 | (square[i] && alpha));
@@ -776,7 +776,7 @@ class DataCube {
 	 * Return: this
 	 */
 	renderGrayImageSlice (context, axis, index) {
-		var imgdata = this.grayImageSlice(axis, index);
+		var imgdata = this.grayImageSlice(axis, index, /*transparent=*/false, /*copy=*/false);
 		context.putImageData(imgdata, 0, 0);
 		return this;
 	}
