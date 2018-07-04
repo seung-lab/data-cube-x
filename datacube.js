@@ -625,7 +625,7 @@ class DataCube {
 	imageSlice (axis, index) {
 		let _this = this;
 
-		let square = this.slice(axis, index);
+		let square = this.slice(axis, index, /*copy=*/false);
 
 		let sizes = {
 			x: [ _this.size.y, _this.size.z ],
@@ -685,7 +685,7 @@ class DataCube {
 	grayImageSlice (axis, index) {
 		let _this = this;
 
-		let square = this.slice(axis, index);
+		let square = this.slice(axis, index, /*copy=*/false);
 
 		let sizes = {
 			x: [ _this.size.y, _this.size.z ],
@@ -757,7 +757,11 @@ class DataCube {
 		var arr8 = new Uint8Array(arr32.buffer);
 		arr32[0] = 255;
 
-		return arr8[0] === 255;
+		let islittle = (arr8[0] === 255);
+
+		this.isLittleEndian = () => islittle;
+
+		return islittle;
 	}
 
 	// For internal use, return the right bitmask for rgba image slicing
