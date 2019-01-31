@@ -22,6 +22,10 @@ can go faster than that, but for many applications, that should be more than
 sufficient. This version doesn't use all the same tricks, but if you run into
 a performance limitation, let us know.
 
+*Note: An enhanced version of this module is maintained as a micro-viewer in the
+[CloudVolume package](https://github.com/seung-lab/cloud-volume/wiki/%CE%BCViewer).
+New features will eventually migrate their way back here, faster if there is demand.*
+
 # Setup
 
 Requires jQuery to use `Volume` but not base `DataCube`.
